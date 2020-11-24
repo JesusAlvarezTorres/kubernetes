@@ -25,6 +25,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"testing"
+	"time"
 
 	"github.com/Azure/azure-sdk-for-go/services/network/mgmt/2019-06-01/network"
 	"github.com/Azure/go-autorest/autorest/to"
@@ -34,7 +35,55 @@ import (
 	azclients "k8s.io/legacy-cloud-providers/azure/clients"
 	"k8s.io/legacy-cloud-providers/azure/clients/armclient"
 	"k8s.io/legacy-cloud-providers/azure/clients/armclient/mockarmclient"
+	"k8s.io/legacy-cloud-providers/azure/retry"
 )
+
+// 2065-01-24 05:20:00 +0000 UTC
+func getFutureTime() time.Time {
+	return time.Unix(3000000000, 0)
+}
+
+func TestNew(t *testing.T) {
+	config := &azclients.ClientConfig{
+		SubscriptionID:          "sub",
+		ResourceManagerEndpoint: "endpoint",
+		Location:                "eastus",
+		RateLimitConfig: &azclients.RateLimitConfig{
+			CloudProviderRateLimit:            true,
+			CloudProviderRateLimitQPS:         0.5,
+			CloudProviderRateLimitBucket:      1,
+			CloudProviderRateLimitQPSWrite:    0.5,
+			CloudProviderRateLimitBucketWrite: 1,
+		},
+		Backoff: &retry.Backoff{Steps: 1},
+	}
+
+	routeClient := New(config)
+	assert.Equal(t, "sub", routeClient.subscriptionID)
+	assert.NotEmpty(t, routeClient.rateLimiterReader)
+	assert.NotEmpty(t, routeClient.rateLimiterWriter)
+}
+
+func TestNewAzureStack(t *testing.T) {
+	config := &azclients.ClientConfig{
+		CloudName:               "AZURESTACKCLOUD",
+		SubscriptionID:          "sub",
+		ResourceManagerEndpoint: "endpoint",
+		Location:                "eastus",
+		RateLimitConfig: &azclients.RateLimitConfig{
+			CloudProviderRateLimit:            true,
+			CloudProviderRateLimitQPS:         0.5,
+			CloudProviderRateLimitBucket:      1,
+			CloudProviderRateLimitQPSWrite:    0.5,
+			CloudProviderRateLimitBucketWrite: 1,
+		},
+		Backoff: &retry.Backoff{Steps: 1},
+	}
+
+	routeClient := New(config)
+	assert.Equal(t, "AZURESTACKCLOUD", routeClient.cloudName)
+	assert.Equal(t, "sub", routeClient.subscriptionID)
+}
 
 func TestCreateOrUpdate(t *testing.T) {
 	ctrl := gomock.NewController(t)
