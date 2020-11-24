@@ -35,7 +35,50 @@ import (
 	azclients "k8s.io/legacy-cloud-providers/azure/clients"
 	"k8s.io/legacy-cloud-providers/azure/clients/armclient"
 	"k8s.io/legacy-cloud-providers/azure/clients/armclient/mockarmclient"
+	"k8s.io/legacy-cloud-providers/azure/retry"
 )
+
+func TestNew(t *testing.T) {
+	config := &azclients.ClientConfig{
+		SubscriptionID:          "sub",
+		ResourceManagerEndpoint: "endpoint",
+		Location:                "eastus",
+		RateLimitConfig: &azclients.RateLimitConfig{
+			CloudProviderRateLimit:            true,
+			CloudProviderRateLimitQPS:         0.5,
+			CloudProviderRateLimitBucket:      1,
+			CloudProviderRateLimitQPSWrite:    0.5,
+			CloudProviderRateLimitBucketWrite: 1,
+		},
+		Backoff: &retry.Backoff{Steps: 1},
+	}
+
+	saClient := New(config)
+	assert.Equal(t, "sub", saClient.subscriptionID)
+	assert.NotEmpty(t, saClient.rateLimiterReader)
+	assert.NotEmpty(t, saClient.rateLimiterWriter)
+}
+
+func TestNewAzureStack(t *testing.T) {
+	config := &azclients.ClientConfig{
+		CloudName:               "AZURESTACKCLOUD",
+		SubscriptionID:          "sub",
+		ResourceManagerEndpoint: "endpoint",
+		Location:                "eastus",
+		RateLimitConfig: &azclients.RateLimitConfig{
+			CloudProviderRateLimit:            true,
+			CloudProviderRateLimitQPS:         0.5,
+			CloudProviderRateLimitBucket:      1,
+			CloudProviderRateLimitQPSWrite:    0.5,
+			CloudProviderRateLimitBucketWrite: 1,
+		},
+		Backoff: &retry.Backoff{Steps: 1},
+	}
+
+	saClient := New(config)
+	assert.Equal(t, "AZURESTACKCLOUD", saClient.cloudName)
+	assert.Equal(t, "sub", saClient.subscriptionID)
+}
 
 func TestGetPropertiesNotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)

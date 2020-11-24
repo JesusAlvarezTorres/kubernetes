@@ -44,6 +44,7 @@ var _ Interface = &Client{}
 type Client struct {
 	armClient      armclient.Interface
 	subscriptionID string
+	cloudName      string
 
 	// Rate limiting configures.
 	rateLimiterReader flowcontrol.RateLimiter
@@ -77,6 +78,7 @@ func New(config *azclients.ClientConfig) *Client {
 		rateLimiterReader: rateLimiterReader,
 		rateLimiterWriter: rateLimiterWriter,
 		subscriptionID:    config.SubscriptionID,
+		cloudName:         config.CloudName,
 	}
 
 	return client
