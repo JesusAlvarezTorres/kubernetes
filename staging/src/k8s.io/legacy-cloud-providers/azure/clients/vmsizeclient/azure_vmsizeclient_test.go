@@ -33,7 +33,50 @@ import (
 	azclients "k8s.io/legacy-cloud-providers/azure/clients"
 	"k8s.io/legacy-cloud-providers/azure/clients/armclient"
 	"k8s.io/legacy-cloud-providers/azure/clients/armclient/mockarmclient"
+	"k8s.io/legacy-cloud-providers/azure/retry"
 )
+
+func TestNew(t *testing.T) {
+	config := &azclients.ClientConfig{
+		SubscriptionID:          "sub",
+		ResourceManagerEndpoint: "endpoint",
+		Location:                "eastus",
+		RateLimitConfig: &azclients.RateLimitConfig{
+			CloudProviderRateLimit:            true,
+			CloudProviderRateLimitQPS:         0.5,
+			CloudProviderRateLimitBucket:      1,
+			CloudProviderRateLimitQPSWrite:    0.5,
+			CloudProviderRateLimitBucketWrite: 1,
+		},
+		Backoff: &retry.Backoff{Steps: 1},
+	}
+
+	vmsizeClient := New(config)
+	assert.Equal(t, "sub", vmsizeClient.subscriptionID)
+	assert.NotEmpty(t, vmsizeClient.rateLimiterReader)
+	assert.NotEmpty(t, vmsizeClient.rateLimiterWriter)
+}
+
+func TestNewAzureStack(t *testing.T) {
+	config := &azclients.ClientConfig{
+		CloudName:               "AZURESTACKCLOUD",
+		SubscriptionID:          "sub",
+		ResourceManagerEndpoint: "endpoint",
+		Location:                "eastus",
+		RateLimitConfig: &azclients.RateLimitConfig{
+			CloudProviderRateLimit:            true,
+			CloudProviderRateLimitQPS:         0.5,
+			CloudProviderRateLimitBucket:      1,
+			CloudProviderRateLimitQPSWrite:    0.5,
+			CloudProviderRateLimitBucketWrite: 1,
+		},
+		Backoff: &retry.Backoff{Steps: 1},
+	}
+
+	vmsizeClient := New(config)
+	assert.Equal(t, "AZURESTACKCLOUD", vmsizeClient.cloudName)
+	assert.Equal(t, "sub", vmsizeClient.subscriptionID)
+}
 
 func TestListNotFound(t *testing.T) {
 	ctrl := gomock.NewController(t)
