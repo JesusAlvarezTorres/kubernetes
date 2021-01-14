@@ -188,7 +188,7 @@ func (c *Client) getVMSSNetworkInterface(ctx context.Context, resourceGroupName 
 	result := network.Interface{}
 	computeAPIVersion := ComputeAPIVersion
 	if strings.EqualFold(c.cloudName, AzureStackCloudName) {
-		computeAPIVersion = AzureStackCloudAPIVersion
+		computeAPIVersion = AzureStackComputeAPIVersion
 	}
 
 	queryParameters := map[string]interface{}{
